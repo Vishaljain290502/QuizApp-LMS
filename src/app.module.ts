@@ -9,6 +9,7 @@ import { CoursesModule } from './courses/courses.module';
 import { ModuleModule } from './module/module.module';
 import { StudentModule } from './student/student.module';
 import { InstructorModule } from './instructor/instructor.module';
+import { LessonsModule } from './lessons/lessons.module';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { InstructorModule } from './instructor/instructor.module';
     AuthModule,
     CoursesModule,
     ModuleModule,
-    MongooseModule.forRoot('mongodb+srv://vishaljaurasoft:uWkjdnz06DQ2zDKg@cluster0.lcqe8e7.mongodb.net/rydr?retryWrites=true&w=majority&appName=Cluster0'), HelperModule, CoursesModule, ModuleModule, StudentModule, InstructorModule],
+    MongooseModule.forRoot('mongodb+srv://vishaljaurasoft:uWkjdnz06DQ2zDKg@cluster0.lcqe8e7.mongodb.net/rydr?retryWrites=true&w=majority&appName=Cluster0'), HelperModule, CoursesModule, ModuleModule, StudentModule, InstructorModule, LessonsModule],
   controllers: [AppController],
   providers: [AppService],
 })
