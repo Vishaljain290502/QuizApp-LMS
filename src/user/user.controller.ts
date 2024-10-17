@@ -18,8 +18,7 @@ export class UserController {
     return this.userService.fetchUserById(id);
   }
 
-  @Patch
-  ('updateUserById/:id')
+  @Patch('updateUserById/:id')
   async updateUserById(
     @Param('id') id: Types.ObjectId,
     @Body() updateUserDto: UpdateUserDto,
