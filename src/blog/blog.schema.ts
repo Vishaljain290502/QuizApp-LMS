@@ -10,11 +10,11 @@ export class BlogDocument {
   @Prop({ required: true })
   content: string;
 
-  @Prop({ required: true })
-  author: string; // Can be a reference to the `User` or `Author` schema, if applicable
+  @Prop({ type: Types.ObjectId, ref: 'User' ,required: true })
+  author: string; 
 
   @Prop({ type: [String], default: [] })
-  categories: string[]; // Categories or tags for the blog post
+  categories: string[]; 
 
   @Prop({ default: Date.now })
   createdAt: Date;
