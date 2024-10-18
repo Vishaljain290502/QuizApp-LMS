@@ -59,6 +59,11 @@ export class UserDocument{
         type: string;
         coordinates: [number, number];
     };
+    @Prop({ default: [] })
+    quizzesCompleted: string[];
+  
+    @Prop({ default: [] })
+    coursesEnrolled: string[];
 }
 
 export type User = HydratedDocument<UserDocument>;
