@@ -49,7 +49,7 @@ export class Quiz {
   title: string;
 
   @Prop({ required: true })
-  startTime: Date;
+  startTime: string;
 
   @Prop({ type: [QuestionSchema], required: true })
   questions: Question[];

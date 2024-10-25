@@ -4,11 +4,13 @@ import { ValidationPipe } from '@nestjs/common';
 import { GlobalExceptionsFilter } from './utils/global.filter';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalFilters(new GlobalExceptionsFilter());
   app.useGlobalPipes(new ValidationPipe());
-
+  app.enableCors();
+  
   const config = new DocumentBuilder()
     .setTitle('Course API')
     .setDescription('API for managing courses')
@@ -17,6 +19,7 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
+
 
   await app.listen(3000);
 }

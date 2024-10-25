@@ -11,5 +11,6 @@ import { QuizGateway } from './quiz.gateway';
   ],
   controllers: [QuizController],
   providers: [QuizService, QuizGateway],
+  exports: [QuizService],
 })
 export class QuizModule {}

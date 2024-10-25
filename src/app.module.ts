@@ -8,6 +8,7 @@ import { HelperModule } from './helper/helper.module';
 import { QuizModule } from './quiz/quiz.module';
 import { CourseModule } from './course/course.module';
 import { QuizGateway } from './quiz/quiz.gateway';
+import { QuizService } from './quiz/quiz.service';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { QuizGateway } from './quiz/quiz.gateway';
     AuthModule,
     CourseModule,
     QuizModule,
-    MongooseModule.forRoot('mongodb+srv://vishaljaurasoft:uWkjdnz06DQ2zDKg@cluster0.lcqe8e7.mongodb.net/rydr?retryWrites=true&w=majority&appName=Cluster0')],
+    MongooseModule.forRoot('mongodb+srv://vishaljaurasoft:uWkjdnz06DQ2zDKg@cluster0.lcqe8e7.mongodb.net/Quizapp?retryWrites=true&w=majority&appName=Cluster0')],
   controllers: [AppController],
   providers: [AppService , QuizGateway],
 })

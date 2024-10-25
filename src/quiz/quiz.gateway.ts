@@ -14,13 +14,12 @@ import { StartQuizDto, SubmitAnswerDto } from './dto/dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('Quizzes') // Tag for Swagger UI
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({ cors: { origin: '*' } })
 export class QuizGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('QuizGateway');
 
-  // Class-level property to store participants' data
   private participants: Array<{ userId: string; correctAnswers: number }> = [];
 
   constructor(private readonly quizService: QuizService) {}
@@ -44,12 +43,12 @@ export class QuizGateway
   async handleQuizStart(@MessageBody() startQuizDto: StartQuizDto): Promise<void> {
     const { quizId } = startQuizDto;
     const quiz = await this.quizService.getQuizById(quizId);
+
     if (!quiz) {
       this.server.emit('quizError', { message: 'Quiz not found' });
       return;
     }
-
-    // Schedule quiz based on startTime
+    
     const now = new Date();
     const delay = new Date(quiz.startTime).getTime() - now.getTime();
 
@@ -110,7 +109,7 @@ export class QuizGateway
 
     // If no correct option found in the schema
     if (!correctOption) {
-      this.server.emit('quizError', { message: 'No correct answer available' });
+      this.server.emit('quizError HttpsStatus.OK', { message: 'No correct answer available' });
       return;
     }
 

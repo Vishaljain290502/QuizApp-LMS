@@ -24,6 +24,7 @@ export class UserService {
   async findUserByPhoneNumber(mobileNumber: string): Promise<User> {
     return this.userModel.findOne({ mobileNumber }).exec();
   }
+  
   async findUserByOtp(otp: string): Promise<User | null> {
     return this.userModel.findOne({ otp }).exec();
   }
@@ -56,10 +57,12 @@ export class UserService {
   // async getAllUsers(): Promise<User[]> {
   //   return this.userModel.find().exec();
   // }
+
   async getAllUsers(): Promise<User[]> {
     const users = await this.userModel.find().exec();
     return users.map(user => user.toObject() as User);
   }
+
   async fetchUserById(id: Types.ObjectId): Promise<User> {
     const user = await this.userModel.findById(id).exec();
     if (!user) {
@@ -75,6 +78,5 @@ export class UserService {
     }
     return updatedUser;
   }
- 
-  
+
 }
