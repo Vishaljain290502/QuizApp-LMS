@@ -23,7 +23,7 @@ export class AuthService {
     return bcrypt.compareSync(password, hashedPassword);
   }
 
-  async generateToken(user: User): Promise<string> {
+   generateToken(user: User):string {
     const payload = { email: user.email, sub: user._id };
     return this.jwtService.sign(payload);
   }
@@ -45,11 +45,12 @@ export class AuthService {
     return otp === this.FIXED_OTP;
   }
 
-  serializeUser(user:User){
+  serializeUser(user:User){       
     return {
       name: user.name,
       email:user.email,
-      token:user.token
+      id:user._id,
+      wallet:user.wallet
     }
   }
 }

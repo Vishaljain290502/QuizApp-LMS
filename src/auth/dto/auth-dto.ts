@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength, IsOptional } from "class-validator";
+import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength, IsOptional, IsMobilePhone } from "class-validator";
 import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginUserDto {
@@ -55,13 +55,13 @@ export class ResetPasswordDto {
 
 export class ForgotPasswordDto {
     @ApiProperty({ 
-        description: 'The email of the user requesting a password reset', 
-        example: 'user@example.com' 
+        description: 'The mobile number of the user requesting a password reset', 
+        example: '+919876543210' 
     })
     @IsString()
-    @IsEmail()
-    email: string;
+    mobileNumber: string;
 }
+
 
 export class VerifyPhoneDto {
     @ApiProperty({ 

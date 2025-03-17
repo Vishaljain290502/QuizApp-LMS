@@ -1,7 +1,7 @@
-import { BadRequestException, Body, Controller, HttpStatus, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, HttpStatus, InternalServerErrorException, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UserService } from 'src/user/user.service';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { CreateUserDto } from 'src/user/dto/user.dto';
 import { 
   LoginUserDto, 
   ForgotPasswordDto, 
@@ -12,14 +12,17 @@ import {
 import * as nodemailer from 'nodemailer';
 import { MailerService } from 'src/helper/mailer.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Types } from 'mongoose';
+import { SmsService } from 'src/sms/sms.service';
 
-@ApiTags('Auth') // Group the API endpoints under the "Auth" tag
+@ApiTags('Auth') 
 @Controller('auth')
 export class AuthController {
     constructor(
         private readonly authService: AuthService,
         private readonly userService: UserService,
         private readonly mailerService: MailerService,
+        private readonly smsService: SmsService,
     ) {}
 
     @Post('/register')
@@ -33,7 +36,11 @@ export class AuthController {
         }
         createUserDto.password = this.authService.hashedPassword(createUserDto.password);
         user = await this.userService.createUser(createUserDto);
-        return { status: HttpStatus.CREATED, data: user, message: "User registered successfully" };
+        return { 
+            statusCode: HttpStatus.CREATED, 
+            data: user, 
+            message: "User registered successfully" 
+        };
     }
 
     @Post('/login')
@@ -45,16 +52,41 @@ export class AuthController {
         if (!user) {
             throw new BadRequestException("User Email not Found");
         }
-        
+    
         if (!this.authService.matchPassword(loginUserDto.password, user.password)) {
             throw new BadRequestException("Password Not Matched");
         }
+    
         const token = this.authService.generateToken(user);
+        await this.userService.updateUserById(user._id, { token });
+    
+        return {
+            statusCode: HttpStatus.OK,
+            user: this.authService.serializeUser(user),
+            token: token,
+            message: "User Logged in Successfully",
+        };
+    }
+    
+    @Post('/logout')
+    @ApiOperation({ summary: 'Logout user' })
+    @ApiResponse({ status: 200, description: 'User logged out successfully.' })
+    @ApiResponse({ status: 400, description: 'User not found or already logged out.' })
+    async logout(@Body('userId') userId: Types.ObjectId) {
+        const user = await this.userService.findUserById(userId); 
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        if (!user.token) {
+            throw new BadRequestException('User is already logged out');
+        }
+
+        await this.userService.updateUserById(userId, { token: null });
 
         return {
-            status: HttpStatus.CREATED,
-            user: this.authService.serializeUser(user),
-            token // Including the token in the response
+            statusCode: HttpStatus.OK,
+            message: 'User logged out successfully',
         };
     }
 
@@ -63,23 +95,35 @@ export class AuthController {
     @ApiResponse({ status: 200, description: 'OTP sent successfully.' })
     @ApiResponse({ status: 400, description: 'User not found.' })
     async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto): Promise<any> {
-        const user = await this.userService.findUserByEmail(forgotPasswordDto.email);
+      try {
+        const user = await this.userService.findUserByPhoneNumber(forgotPasswordDto.mobileNumber);
         if (!user) {
-            throw new BadRequestException('User not found');
+          throw new BadRequestException('User not found');
         }
     
         // Generate a 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      
-        // Store OTP in user model or a separate OTP storage (recommended)
-        user.otp = otp;
+    
+        // Store OTP in user database
         await this.userService.updateUserById(user._id, { otp });
     
-        // Send OTP to the user
-        await this.mailerService.sendMail({ email: user.email, otp });
+        // Send OTP via SMS
+        // const smsMessage = `Your OTP for password reset is: . Do not share it with anyone.`;
+        const smsMessage = `${otp} is your One Time Password (OTP) for login/signup at Testmo. This OTP will only be valid for 10 minutes. Do not share with anyone - TESTMO`;
+        await this.smsService.sendSms(user.mobileNumber, smsMessage);
+
+        console.log("otpsendeeddd")
     
-        return { status: HttpStatus.CREATED, message: 'OTP sent successfully', Otp: user.otp };
+        return {
+          statusCode: HttpStatus.CREATED,
+          message: 'OTP sent successfully',
+        };
+      } catch (error) {
+        throw new InternalServerErrorException('Failed to send OTP');
+      }
     }
+    
+    
 
     @Post('/reset-password')
     @ApiOperation({ summary: 'Reset user password using OTP' })
@@ -87,27 +131,61 @@ export class AuthController {
     @ApiResponse({ status: 400, description: 'Invalid OTP.' })
     async resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<any> {
         const { otp, password } = resetPasswordDto;
-
-        // Ensure that the user is identified correctly
-        const user = await this.userService.findUserByOtp(otp); // Assuming `findUserByOtp` is a method that finds a user by OTP
-        if (!user) {
+        const user = await this.userService.findUserByOtp(otp);
+        if (!user || user.otp !== otp) {
             throw new BadRequestException('Invalid OTP');
         }
 
-        // Validate OTP
-        if (user.otp !== otp) {
-            throw new BadRequestException('Invalid OTP');
-        }
-
-        // Update the user's password and clear the OTP
         await this.userService.updateUserById(user._id, {
             password: this.authService.hashedPassword(password),
             otp: null, 
         });
 
-        return { status: HttpStatus.CREATED, message: 'Password reset successfully' };
+        return { 
+            statusCode: HttpStatus.CREATED, 
+            message: 'Password reset successfully' 
+        };
     }
     
+    @Post('/change-password')
+    @ApiOperation({ summary: 'Change user password' })
+    @ApiResponse({ status: 200, description: 'Password changed successfully.' })
+    @ApiResponse({ status: 400, description: 'Invalid current password.' })
+    @ApiResponse({ status: 404, description: 'User not found.' })
+    async changePassword(
+    @Body('userId') userId: Types.ObjectId,
+    @Body('currentPassword') currentPassword: string,
+    @Body('newPassword') newPassword: string,
+    ): Promise<any> {
+    // Step 1: Find the user by ID
+    const user = await this.userService.findUserById(userId);
+    if (!user) {
+        throw new BadRequestException('User not found');
+    }
+
+    // Step 2: Check if the current password is correct
+    const isPasswordMatched = this.authService.matchPassword(
+        currentPassword,
+        user.password,
+    );
+    if (!isPasswordMatched) {
+        throw new BadRequestException('Invalid current password');
+    }
+
+    // Step 3: Hash the new password
+    const hashedNewPassword = this.authService.hashedPassword(newPassword);
+
+    // Step 4: Update the user's password
+    await this.userService.updateUserById(userId, { password: hashedNewPassword });
+
+    // Return response
+    return {
+        statusCode: HttpStatus.OK,
+        message: 'Password changed successfully',
+    };
+    }
+
+
     @Post('/verify-phone')
     @ApiOperation({ summary: 'Verify user phone number with OTP' })
     @ApiResponse({ status: 200, description: 'Phone number verified successfully.' })
@@ -121,9 +199,11 @@ export class AuthController {
         if (!isOtpValid) {
             throw new BadRequestException('Invalid OTP');
         }
-        // Update user verification
         await this.userService.updateUserById(user._id, { isPhoneVerified: true });
-        return { status: HttpStatus.CREATED, message: 'Phone number verified successfully' };
+        return { 
+            statusCode: HttpStatus.CREATED, 
+            message: 'Phone number verified successfully' 
+        };
     }
   
     @Post('/verify-email')
@@ -139,8 +219,10 @@ export class AuthController {
         if (!isOtpValid) {
             throw new BadRequestException('Invalid OTP');
         }
-        // Update user verification status
         await this.userService.updateUserById(user._id, { isEmailVerified: true });
-        return { status: HttpStatus.CREATED, message: 'Email verified successfully' };
+        return { 
+            statusCode: HttpStatus.CREATED, 
+            message: 'Email verified successfully' 
+        };
     }
 }

@@ -20,6 +20,8 @@ export class MailerService {
         };
         console.log('Nodemailer:', nodemailer);
 
+        console.log("mail send to user success fully")
+
         const transporter = nodemailer.createTransport({
           service: 'Gmail',
           host: process.env.NODEMAILER_HOST,

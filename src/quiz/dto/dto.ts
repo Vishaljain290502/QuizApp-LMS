@@ -1,15 +1,26 @@
-import { IsString, IsNotEmpty, IsArray, IsEnum, IsBoolean, ValidateNested, IsDateString, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsArray,
+  IsEnum,
+  IsBoolean,
+  ValidateNested,
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsMongoId,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { QuestionType, OptionType } from '../quiz.schema';
 import { ApiProperty } from '@nestjs/swagger';
 
 // Option DTO
 export class CreateOptionDto {
-  @ApiProperty({ enum: OptionType, description: 'The type of the option (e.g., multiple-choice, true/false).' })
+  @ApiProperty({ enum: OptionType, description: 'The type of the option (e.g., text or image).' })
   @IsEnum(OptionType)
   type: OptionType;
 
-  @ApiProperty({ description: 'The text value of the option.', example: 'Option A' })
+  @ApiProperty({ description: 'The value of the option.', example: 'Option A' })
   @IsString()
   @IsNotEmpty()
   value: string;
@@ -26,7 +37,7 @@ export class CreateQuestionDto {
   @IsNotEmpty()
   question: string;
 
-  @ApiProperty({ enum: QuestionType, description: 'The type of the question (e.g., multiple-choice, open-ended).' })
+  @ApiProperty({ enum: QuestionType, description: 'The type of the question (e.g., radio, checkbox).' })
   @IsEnum(QuestionType)
   type: QuestionType;
 
@@ -35,6 +46,9 @@ export class CreateQuestionDto {
   @ValidateNested({ each: true })
   @Type(() => CreateOptionDto)
   options: CreateOptionDto[];
+
+  @IsString()
+  description: string;
 }
 
 // Quiz Creation DTO
@@ -46,7 +60,26 @@ export class CreateQuizDto {
 
   @ApiProperty({ description: 'The start time of the quiz in ISO format.', example: '2024-10-21T10:00:00Z' })
   @IsDateString()
-  startTime: string; // ISO date string
+  startTime: string;
+
+  @ApiProperty({ description: 'The end time of the quiz in ISO format.', example: '2024-10-21T12:00:00Z' })
+  @IsDateString()
+  endTime: string;
+
+  @ApiProperty({ description: 'The main topic ID associated with the quiz.', example: '605c73b2f6a7c2b6d8b8e9a1' })
+  @IsMongoId()
+  @IsNotEmpty()
+  mainTopic: string;
+
+  @ApiProperty({ description: 'List of sub-topic IDs associated with the quiz.' })
+  @IsArray()
+  @IsMongoId({ each: true })
+  subTopics: string[];
+
+  @ApiProperty({ description: 'The price of the quiz.', example: 10 })
+  @IsNumber()
+  @IsNotEmpty()
+  price: number;
 
   @ApiProperty({ type: [CreateQuestionDto], description: 'The list of questions in the quiz.' })
   @IsArray()
@@ -58,14 +91,38 @@ export class CreateQuizDto {
 // Quiz Update DTO
 export class UpdateQuizDto {
   @ApiProperty({ description: 'The title of the quiz.', required: false, example: 'Updated Quiz Title' })
+  @IsOptional()
   @IsString()
   title?: string;
 
   @ApiProperty({ description: 'The start time of the quiz in ISO format.', required: false, example: '2024-10-21T10:00:00Z' })
+  @IsOptional()
   @IsDateString()
   startTime?: string;
 
+  @ApiProperty({ description: 'The end time of the quiz in ISO format.', required: false, example: '2024-10-21T12:00:00Z' })
+  @IsOptional()
+  @IsDateString()
+  endTime?: string;
+
+  @ApiProperty({ description: 'The main topic ID for the quiz.', required: false, example: '605c73b2f6a7c2b6d8b8e9a1' })
+  @IsOptional()
+  @IsMongoId()
+  mainTopic?: string;
+
+  @ApiProperty({ description: 'List of sub-topic IDs for the quiz.', required: false })
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  subTopics?: string[];
+
+  @ApiProperty({ description: 'The price of the quiz.', required: false, example: 10 })
+  @IsOptional()
+  @IsNumber()
+  price?: number;
+
   @ApiProperty({ type: [CreateQuestionDto], description: 'The list of questions to update in the quiz.', required: false })
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateQuestionDto)
@@ -74,8 +131,8 @@ export class UpdateQuizDto {
 
 // Start Quiz DTO
 export class StartQuizDto {
-  @ApiProperty({ description: 'The ID of the quiz to start.', example: '123456' })
-  @IsString()
+  @ApiProperty({ description: 'The ID of the quiz to start.', example: '605c73b2f6a7c2b6d8b8e9a1' })
+  @IsMongoId()
   @IsNotEmpty()
   quizId: string;
 }
@@ -83,12 +140,12 @@ export class StartQuizDto {
 // Submit Answer DTO
 export class SubmitAnswerDto {
   @ApiProperty({ description: 'The ID of the user submitting the answer.', example: 'user-789' })
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
-  userId: string;
+  userId: string; 
 
-  @ApiProperty({ description: 'The ID of the quiz.', example: '123456' })
-  @IsString()
+  @ApiProperty({ description: 'The ID of the quiz.', example: '605c73b2f6a7c2b6d8b8e9a1' })
+  @IsMongoId()
   @IsNotEmpty()
   quizId: string;
 
@@ -102,3 +159,29 @@ export class SubmitAnswerDto {
   @IsNotEmpty()
   selectedOption: string;
 }
+
+export class SubmitQuizDto {
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
+
+  @IsArray()
+  // @IsNotEmpty({ each: true })
+  answers: string[];
+
+  @IsNumber()
+  @IsNotEmpty()
+  completionTime: number; // Time taken to complete the quiz in seconds
+}
+
+export class AddPlayedByDto {
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
+}
+
+export class JoinQuizDto {
+  @IsString()
+  readonly userId: string;
+}
+

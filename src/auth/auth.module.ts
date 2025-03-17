@@ -6,13 +6,18 @@ import { userSchema } from 'src/user/user.schema';
 import { UserService } from 'src/user/user.service';
 import { JwtModule } from '@nestjs/jwt';
 import { MailerService } from 'src/helper/mailer.service';
+import { UserModule } from '../user/user.module';
+import { walletSchema } from '../wallet/wallet.schema';
+import { SmsService } from '../sms/sms.service';
 
 
 @Module({ 
   imports:[MongooseModule.forFeature([{name:"User",schema:userSchema}]),JwtModule.register({
-    secret:"secretformecoceventmanagementsystem"
-  }),],
+    secret:"secretformecoceventmanagementsystem"}),
+    MongooseModule.forFeature([{ name: 'Wallet', schema: walletSchema }]),
+    UserModule,
+    ],
   controllers: [AuthController],
-  providers: [AuthService,UserService,MailerService],
+  providers: [AuthService,UserService,MailerService,SmsService],
 })
 export class AuthModule {}

@@ -13,6 +13,7 @@ export class GlobalExceptionsFilter extends BaseExceptionFilter {
     const message = exception instanceof HttpException ? exception.getResponse() : 'Internal server error';
 
     this.logger.error(`Exception: ${message}`);
+    console.log("error",exception);
 
     response.status(status).json({
       statusCode: status,

@@ -1,7 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type CourseDocument = Course & Document;
+
+export type LessonDocument = Lesson & Document;
 
 export enum ContentType {
   Video = 'video',
@@ -18,10 +20,7 @@ export class Content {
   title: string;
 
   @Prop({ required: true })
-  url: string; 
-
-  @Prop()
-  quizId?: string;  
+  url: string;
 }
 
 export const ContentSchema = SchemaFactory.createForClass(Content);
@@ -29,13 +28,30 @@ export const ContentSchema = SchemaFactory.createForClass(Content);
 @Schema()
 export class Lesson {
   @Prop({ required: true })
-  title: string;
+  lessonTitle: string;
 
   @Prop({ type: [ContentSchema], required: true })
   contents: Content[];
 }
 
 export const LessonSchema = SchemaFactory.createForClass(Lesson);
+
+@Schema()
+export class Feedback {
+  @Prop({ required: true, type: Types.ObjectId, ref: 'User' }) 
+  userId: Types.ObjectId;
+
+  @Prop({ required: true })
+  feedbackText: string;
+}
+
+export const FeedbackSchema = SchemaFactory.createForClass(Feedback);
+
+export enum CourseStatus {
+  Draft = 'draft',
+  Published = 'published',
+  Archived = 'archived',
+}
 
 @Schema()
 export class Course {
@@ -45,11 +61,50 @@ export class Course {
   @Prop({ required: true })
   description: string;
 
-  @Prop({ type: [LessonSchema], required: true })
+  @Prop({ type: [LessonSchema] })
   lessons: Lesson[];
 
   @Prop({ required: true })
   instructor: string;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  enrolledStudents: Types.ObjectId[];
+
+  @Prop({ required: true, enum: CourseStatus, default: CourseStatus.Draft })
+  status: CourseStatus;
+
+  @Prop({ default: Date.now })
+  createdAt: Date;
+
+  @Prop()
+  updatedAt?: Date;
+
+  @Prop({ default: null })
+  publishedAt?: Date;
+
+  @Prop({ type: [String], default: [] })
+  categories: string[];
+
+  @Prop({ type: [String], default: [] })
+  prerequisites: string[];
+
+  @Prop({ default: 0 })
+  rating: number;
+
+  @Prop({ type: [FeedbackSchema], default: [] })
+  feedbacks: Feedback[];
+
+  @Prop({ default: true })
+  isFree: boolean;
+
+  @Prop({ default: 0 })
+  price?: number;
+
+  @Prop({ default: null })
+  estimatedDuration?: number;
+
+  @Prop({ default: null })
+  coverImageUrl?: string;
 }
 
 export const CourseSchema = SchemaFactory.createForClass(Course);
