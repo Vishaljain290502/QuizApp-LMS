@@ -11,9 +11,10 @@ import {
 } from './dto/auth-dto';
 import * as nodemailer from 'nodemailer';
 import { MailerService } from 'src/helper/mailer.service';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { Types } from 'mongoose';
 import { SmsService } from 'src/sms/sms.service';
+import { WalletService } from '../wallet/wallet.service';
 
 @ApiTags('Auth') 
 @Controller('auth')
@@ -23,24 +24,47 @@ export class AuthController {
         private readonly userService: UserService,
         private readonly mailerService: MailerService,
         private readonly smsService: SmsService,
+        private readonly walletService: WalletService,
     ) {}
+
 
     @Post('/register')
     @ApiOperation({ summary: 'Register a new user' })
     @ApiResponse({ status: 201, description: 'User registered successfully.' })
-    @ApiResponse({ status: 400, description: 'User with Email already exists.' })
+    @ApiResponse({ status: 400, description: 'User with this mobile number already exists.' })
     async register(@Body() createUserDto: CreateUserDto) {
-        let user = await this.userService.findUserByEmail(createUserDto.email);
-        if (user) {
-            throw new BadRequestException("User with Email already exists");
-        }
-        createUserDto.password = this.authService.hashedPassword(createUserDto.password);
-        user = await this.userService.createUser(createUserDto);
-        return { 
-            statusCode: HttpStatus.CREATED, 
-            data: user, 
-            message: "User registered successfully" 
+      const user = await this.userService.findUserByPhoneNumber(createUserDto.mobileNumber);
+      if (user) {
+        throw new BadRequestException("User with this mobile number already exists");
+      }
+    
+      createUserDto.password = this.authService.hashedPassword(createUserDto.password);
+    
+      // Create user
+      const newUser = await this.userService.createUser(createUserDto);
+    
+      try {
+        // Create wallet
+        const wallet = await this.walletService.createWallet(newUser._id.toString(), 'USD');
+    
+        // Update user with wallet ID
+        await this.userService.updateUserById(newUser._id, {
+          wallet: (wallet as any)._id.toString(),
+        });
+    
+        return {
+          statusCode: HttpStatus.CREATED,
+          data: {
+            ...newUser.toObject(),
+            wallet: (wallet as any)._id.toString(),
+          },
+          message: "User registered successfully",
         };
+      } catch (err) {
+        // Rollback: delete the user if wallet creation fails
+        await this.userService.deleteUserById(newUser._id.toString());
+        throw new InternalServerErrorException('Wallet creation failed. User creation rolled back.');
+      }
     }
 
     @Post('/login')
@@ -104,15 +128,18 @@ export class AuthController {
         // Generate a 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
     
-        // Store OTP in user database
+        // Store OTP in user database with optional expiry
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await this.userService.updateUserById(user._id, { otp });
     
-        // Send OTP via SMS
-        // const smsMessage = `Your OTP for password reset is: . Do not share it with anyone.`;
-        const smsMessage = `${otp} is your One Time Password (OTP) for login/signup at Testmo. This OTP will only be valid for 10 minutes. Do not share with anyone - TESTMO`;
-        await this.smsService.sendSms(user.mobileNumber, smsMessage);
-
-        console.log("otpsendeeddd")
+        // Build message
+        const smsMessage = `Hello ${user.name}, You have requested to reset your password. Your OTP (One-Time Password) is:${otp} This OTP is valid for **10 minutes**. Please do not share it with anyone. If you didn't request this, please ignore this email. Best Regards, Testmo Support Team`;
+    
+        // Template ID for forgot-password OTP
+        const templateId = '987456574357890';
+    
+        // Send SMS
+        await this.smsService.sendSms(user.mobileNumber, smsMessage, templateId);
     
         return {
           statusCode: HttpStatus.CREATED,
@@ -124,7 +151,6 @@ export class AuthController {
     }
     
     
-
     @Post('/reset-password')
     @ApiOperation({ summary: 'Reset user password using OTP' })
     @ApiResponse({ status: 200, description: 'Password reset successfully.' })
@@ -185,26 +211,75 @@ export class AuthController {
     };
     }
 
+    @Post('/send-otp')
+    @ApiOperation({ summary: 'Send OTP for login via mobile number' })
+    @ApiResponse({ status: 200, description: 'OTP sent successfully.' })
+    @ApiResponse({ status: 400, description: 'User not found.' })
+    @ApiBody({
+    schema: {
+        type: 'object',
+        properties: {
+        mobileNumber: { type: 'string', example: '9876543210' },
+        },
+    },
+    })
+    async sendOtp(@Body() body: { mobileNumber: string }) {
+    const { mobileNumber } = body;
 
-    @Post('/verify-phone')
-    @ApiOperation({ summary: 'Verify user phone number with OTP' })
-    @ApiResponse({ status: 200, description: 'Phone number verified successfully.' })
-    @ApiResponse({ status: 400, description: 'User not found or invalid OTP.' })
-    async verifyPhone(@Body() verifyPhoneDto: VerifyPhoneDto): Promise<any> {
-        const user = await this.userService.findUserByPhoneNumber(verifyPhoneDto.mobileNumber);
-        if (!user) {
-            throw new BadRequestException('User not found');
+    const user = await this.userService.findUserByPhoneNumber(mobileNumber);
+    if (!user) throw new BadRequestException('User not found');
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await this.userService.updateUserById(user._id, { otp });
+
+    const sms = `${otp} is your One Time Password (OTP) for login/signup at Testmo. This OTP will only be valid for 10 minutes. Do not share with anyone - TESTMO`;
+
+    const otpTemplateId =  '1707173590027424849'; 
+
+    await this.smsService.sendSms(mobileNumber, sms, otpTemplateId);
+
+    return { message: 'OTP sent successfully' };
+    }
+
+
+    @Post('/verify-otp')
+    @ApiOperation({ summary: 'Verify OTP and log in the user' })
+    @ApiResponse({ status: 200, description: 'OTP verified and user logged in.' })
+    @ApiResponse({ status: 400, description: 'Invalid OTP or expired.' })
+    @ApiBody({
+        schema: {
+        type: 'object',
+        properties: {
+            mobileNumber: { type: 'string', example: '9876543210' },
+            otp: { type: 'string', example: '123456' },
+        },
+        },
+    })
+    async verifyOtp(@Body() body: { mobileNumber: string; otp: string }) {
+        const { mobileNumber, otp } = body;
+
+        const user = await this.userService.findUserByPhoneNumber(mobileNumber);
+        if (!user || user.otp !== otp) {
+        throw new BadRequestException('Invalid OTP');
         }
-        const isOtpValid = await this.authService.verifyOtp(user, verifyPhoneDto.otp);
-        if (!isOtpValid) {
-            throw new BadRequestException('Invalid OTP');
-        }
-        await this.userService.updateUserById(user._id, { isPhoneVerified: true });
-        return { 
-            statusCode: HttpStatus.CREATED, 
-            message: 'Phone number verified successfully' 
+
+
+
+        await this.userService.updateUserById(user._id, { otp: null});
+
+        const token = this.authService.generateToken(user);
+        await this.userService.updateUserById(user._id, { token });
+
+        return {
+        statusCode:HttpStatus.OK,
+        message: 'OTP verified successfully',
+        token,
+        user: this.authService.serializeUser(user),
         };
     }
+    
   
     @Post('/verify-email')
     @ApiOperation({ summary: 'Verify user email with OTP' })
@@ -225,4 +300,5 @@ export class AuthController {
             message: 'Email verified successfully' 
         };
     }
+
 }

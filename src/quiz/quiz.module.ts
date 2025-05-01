@@ -10,18 +10,20 @@ import { MainTopicSchema } from 'src/topics/main.topic.schema';
 import { SubTopicSchema } from 'src/topics/sub.topic.schema';
 import { Result, ResultSchema } from './result.schema';
 import { WalletDocument, walletSchema } from '../wallet/wallet.schema';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
-    ScheduleModule.forRoot(), // Add ScheduleModule to enable cron jobs
+    ScheduleModule.forRoot(), 
     MongooseModule.forFeature([
-      { name: Quiz.name, schema: QuizSchema },
+      { name: 'Quiz', schema: QuizSchema },
       { name: Result.name, schema: ResultSchema },
       { name: 'Wallet', schema: walletSchema },
       { name: 'MainTopic', schema: MainTopicSchema },
       { name: 'SubTopic', schema: SubTopicSchema },
     ]),
-    HelperModule
+    HelperModule,
+    UserModule
   ],
   controllers: [QuizController],
   providers: [QuizService, QuizGateway],

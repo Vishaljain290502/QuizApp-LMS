@@ -18,19 +18,6 @@ export class UserService {
   async createUser(createUserDto: CreateUserDto): Promise<User> {
     // Step 1: Create the user
     const user = await this.userModel.create(createUserDto);
-
-    // Step 2: Create a wallet linked to this user
-    const wallet = await this.walletModel.create({
-      depositBalance: 0,
-      bonusBalance: 0,
-      winningsBalance: 0,
-      totalBalance: 0,
-      currency: '$',
-      user: user._id, 
-    });
-
-    // Step 3: Update user document with wallet ID
-    user.wallet = wallet._id;
     await user.save();
 
 
@@ -48,9 +35,17 @@ export class UserService {
   async findUserByOtp(otp: string): Promise<User | null> {
     return this.userModel.findOne({ otp }).exec();
   }
+  
   async findUserById(userId: Types.ObjectId): Promise<User | null> {
-    return this.userModel.findById((userId)).exec();
+    return this.userModel.findById(userId).populate({
+      path:"joinedQuizzes",
+      model:"Quiz"
+    }).exec();
   }  
+  
+  async findUserByIds(userId: string): Promise<User | null> {
+    return this.userModel.findById(userId).populate('joinedQuizzes').exec();
+  }
   
 
   async saveResetToken(
@@ -70,11 +65,6 @@ export class UserService {
     user.resetTokenExpiration = null;
     await user.save();
   }
-
-
-  // async getAllUsers(): Promise<User[]> {
-  //   return this.userModel.find().exec();
-  // }
 
   async getAllUsers(): Promise<User[]> {
     const users = await this.userModel.find().exec();
@@ -107,6 +97,14 @@ export class UserService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
     return updatedUser;
+  }
+
+  async deleteUserById(userId: string): Promise<void> {
+    const result = await this.userModel.findByIdAndDelete(userId);
+
+    if (!result) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
   }
 
 

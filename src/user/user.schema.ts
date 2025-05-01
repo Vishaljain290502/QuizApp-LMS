@@ -1,9 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { HydratedDocument, Types } from 'mongoose';
-import { WalletDocument } from '../wallet/wallet.schema'; 
+import mongoose, { HydratedDocument } from 'mongoose';
+import { WalletDocument } from '../wallet/wallet.schema';  
 
-
-@Schema()
+@Schema({ timestamps: true })
 export class UserDocument {
   @Prop()
   name: string;
@@ -13,6 +12,9 @@ export class UserDocument {
 
   @Prop({ required: true, unique: true })
   email: string;
+
+  @Prop({ type: String, default: null }) 
+  profilePic: string;
 
   @Prop({ required: true })
   password: string;
@@ -24,10 +26,10 @@ export class UserDocument {
   mobileNumber: string;
 
   @Prop()
-  city:string;
+  city: string;
 
   @Prop()
-  state:string;
+  state: string;
 
   @Prop({ default: false })
   isPhoneVerified: boolean;
@@ -46,31 +48,34 @@ export class UserDocument {
 
   @Prop({ default: [] })
   quizzesCompleted: mongoose.Types.ObjectId[]; 
-  
+
   @Prop({ default: [] })
-  coursesEnrolled: mongoose.Types.ObjectId[]; 
+  coursesEnrolled: mongoose.Types.ObjectId[];
+
+  @Prop({ type: [{ type: mongoose.Types.ObjectId, ref: 'Quizzes' }] })
+  joinedQuizzes: mongoose.Types.ObjectId[];
+  
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Wallet' })
   wallet: mongoose.Types.ObjectId;
 
-
-   /**
+  /**d
    * 🎉 New Payment Details Section
    */
-   @Prop()
-   bankName: string;
- 
-   @Prop()
-   accountHolderName: string;
- 
-   @Prop()
-   accountNumber: string;
- 
-   @Prop()
-   ifscCode: string;
- 
-   @Prop([String])
-   upiIds: string[]; 
+  @Prop()
+  bankName: string;
+
+  @Prop()
+  accountHolderName: string;
+
+  @Prop()
+  accountNumber: string;
+
+  @Prop()
+  ifscCode: string;
+
+  @Prop([String])
+  upiIds: string[];
 
   /**
    * Adds a quiz to the user's completed list.
@@ -82,9 +87,6 @@ export class UserDocument {
     }
   }
 
-
-  
-
   /**
    * Enrolls the user in a course.
    * @param courseId - The ID of the course to enroll in.
@@ -92,6 +94,16 @@ export class UserDocument {
   enrollCourse(courseId: mongoose.Types.ObjectId) {
     if (!this.coursesEnrolled.includes(courseId)) {
       this.coursesEnrolled.push(courseId);
+    }
+  }
+
+  /**
+   * Joins a quiz (adds it to the user's joined quizzes).
+   * @param quizId - The ID of the quiz to join.
+   */
+  joinQuiz(quizId: mongoose.Types.ObjectId) {
+    if (!this.joinedQuizzes.includes(quizId)) {
+      this.joinedQuizzes.push(quizId);
     }
   }
 }

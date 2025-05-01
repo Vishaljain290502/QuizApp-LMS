@@ -9,6 +9,7 @@ import { MailerService } from 'src/helper/mailer.service';
 import { UserModule } from '../user/user.module';
 import { walletSchema } from '../wallet/wallet.schema';
 import { SmsService } from '../sms/sms.service';
+import { WalletModule } from '../wallet/wallet.module';
 
 
 @Module({ 
@@ -16,6 +17,7 @@ import { SmsService } from '../sms/sms.service';
     secret:"secretformecoceventmanagementsystem"}),
     MongooseModule.forFeature([{ name: 'Wallet', schema: walletSchema }]),
     UserModule,
+    WalletModule
     ],
   controllers: [AuthController],
   providers: [AuthService,UserService,MailerService,SmsService],

@@ -1,5 +1,6 @@
 import { IsString, IsBoolean, IsDate, IsOptional, MaxLength, MinLength, IsNotEmpty, IsEmail, IsMongoId, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger'; 
+import { Type } from 'class-transformer';
 
 export class UserDto {
   @ApiProperty({ description: 'The name of the user', example: 'John Doe' })
@@ -164,6 +165,7 @@ export class UpdateUserDto {
   })
   @IsOptional()
   @IsDate()
+  @Type(() => Date)
   dob?: Date;
 
   @ApiProperty({
@@ -174,6 +176,11 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   email?: string;
+
+  @ApiProperty({ description: 'User profile picture URL', required: false })
+  @IsOptional()
+  @IsString()
+  profilePic?: string;
 
   @ApiProperty({
     description: 'The password of the user',
@@ -261,6 +268,9 @@ export class UpdateUserDto {
     type: string;
     coordinates: [number, number];
   };
+
+  @IsOptional()
+  wallet?: string;
 }
 
 export class FetchUserDto {

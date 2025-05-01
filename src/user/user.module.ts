@@ -5,6 +5,8 @@ import { UserController } from './user.controller';
 import { userSchema } from './user.schema';
 import { walletSchema } from '../wallet/wallet.schema';
 import { TransactionSchema } from '../transaction/transaction.schema';
+import { HelperModule } from '../helper/helper.module';
+import { QuizSchema } from '../quiz/quiz.schema';
 
 @Module({
   imports: [
@@ -12,7 +14,9 @@ import { TransactionSchema } from '../transaction/transaction.schema';
       { name: 'User', schema: userSchema },
       { name: 'Wallet', schema: walletSchema },
       { name: 'Transaction', schema: TransactionSchema },
+      { name: 'Quiz', schema: QuizSchema },
     ]),
+    HelperModule
   ],
   controllers: [UserController],
   providers: [UserService],

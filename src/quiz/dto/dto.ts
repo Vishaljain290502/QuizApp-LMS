@@ -49,6 +49,10 @@ export class CreateQuestionDto {
 
   @IsString()
   description: string;
+
+  @IsOptional()
+  @IsString()
+  image?:string;
 }
 
 // Quiz Creation DTO
@@ -166,12 +170,11 @@ export class SubmitQuizDto {
   userId: string;
 
   @IsArray()
-  // @IsNotEmpty({ each: true })
   answers: string[];
 
   @IsNumber()
   @IsNotEmpty()
-  completionTime: number; // Time taken to complete the quiz in seconds
+  completionTime: number; 
 }
 
 export class AddPlayedByDto {

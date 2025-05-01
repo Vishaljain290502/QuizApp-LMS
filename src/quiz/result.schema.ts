@@ -4,7 +4,7 @@ import { Document, Types } from 'mongoose';
 @Schema()
 export class Result {
   @Prop({ type: Types.ObjectId, ref: 'Quiz', required: true })
-  quizId: string; // Reference to the associated quiz
+  quizId: Types.ObjectId; 
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: string; // Reference to the user who participated

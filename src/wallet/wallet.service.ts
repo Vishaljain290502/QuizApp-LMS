@@ -11,10 +11,13 @@ export class WalletService {
 
   // Create Wallet
   async createWallet(userId: string, currency: string): Promise<WalletDocument> {
-    const wallet = new this.walletModel({ currency });
-    await wallet.save();
-    return wallet;
+    const wallet = new this.walletModel({
+      user: userId, 
+      currency,
+    });
+    return await wallet.save();
   }
+  
 
   // Add funds to the deposit balance
   async addDeposit(walletId: string, amount: number): Promise<WalletDocument> {

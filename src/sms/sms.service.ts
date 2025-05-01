@@ -10,10 +10,16 @@ export class SmsService {
   private readonly sender = process.env.YOURBULKSMS_SENDER || 'TESTMO'; 
   private readonly route = '2';
   private readonly country = '0';
-  private readonly templateId = process.env.YOURBULKSMS_TEMPLATEID || '1707173590027424849'
+  // private readonly templateId = process.env.YOURBULKSMS_TEMPLATEID || '1707173590027424849'
 
-  async sendSms(mobileNumbers: string, message: string, isUnicode = false): Promise<void> {
+  async sendSms(
+    mobileNumbers: string,
+    message: string,
+    templateId: string,
+    isUnicode = false
+  ): Promise<void> {
     try {
+      console.log(templateId);
       const params = {
         authkey: this.authKey,
         mobiles: mobileNumbers,
@@ -21,22 +27,18 @@ export class SmsService {
         sender: this.sender,
         route: this.route,
         country: this.country,
-        DLT_TE_ID:this.templateId,
-        // ...(isUnicode && { unicode: '1' }), 
+        DLT_TE_ID: templateId,
       };
-
+  
       const response = await axios.get(this.apiUrl, { params });
-     console.log("response",response)
-     console.log("data",response.data)
+  
       if (response.status !== 200 || !response.data) {
         this.logger.error(`SMS API responded with status: ${response.status}`);
         throw new InternalServerErrorException('Failed to send SMS');
       }
-
-      console.log("sms sent to this api",`Sms successfully sent to this number ${mobileNumbers}`)
-
+  
       this.logger.log(`SMS sent successfully to ${mobileNumbers}. Response: ${response.data}`);
-    } catch (error) { 
+    } catch (error) {
       if (axios.isAxiosError(error)) {
         this.logger.error(`Axios error while sending SMS: ${error.message}`, error.stack);
         throw new InternalServerErrorException('SMS service is currently unavailable');
@@ -46,4 +48,5 @@ export class SmsService {
       }
     }
   }
+  
 }

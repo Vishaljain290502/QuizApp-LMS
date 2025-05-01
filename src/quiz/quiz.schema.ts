@@ -40,8 +40,6 @@ export class Option {
 
 export const OptionSchema = SchemaFactory.createForClass(Option);
 
-
-
 @Schema()
 export class Question {
   @Prop({ required: true })
@@ -55,6 +53,12 @@ export class Question {
 
   @Prop()
   description: string;
+
+  @Prop()
+  test: string;
+
+  @Prop()
+  image: string;
 }
 
 export const QuestionSchema = SchemaFactory.createForClass(Question);
@@ -86,9 +90,10 @@ export class Quiz {
 
   @Prop({ type: Types.ObjectId, ref: 'MainTopic', required: true })
   mainTopic: Types.ObjectId;
-
+  
   @Prop({ type: [{ type: Types.ObjectId, ref: 'SubTopic' }], required: true })
   subTopics: Types.ObjectId[];
+  
 
   @Prop({ type: Number, required: true, min: 0 })
   price: number;
@@ -96,7 +101,7 @@ export class Quiz {
   @Prop({ enum: QuizStatus, default: QuizStatus.Draft })
   status: QuizStatus;
 
-  @Prop({type: Number, required: true,})
+  @Prop({ type: Number, required: true })
   totalWinningAmount: number;
   
   @Prop({ type: [WinningAmountSchema], required: true })
@@ -105,9 +110,9 @@ export class Quiz {
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
   playedBy: Types.ObjectId[];
 
-  @Prop({ enum: QuizMode})
+
+  @Prop({ enum: QuizMode })
   quizMode: QuizMode;
-  
 }
 
 export const QuizSchema = SchemaFactory.createForClass(Quiz);
