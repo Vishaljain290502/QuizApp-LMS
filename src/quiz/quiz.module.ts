@@ -11,6 +11,7 @@ import { SubTopicSchema } from 'src/topics/sub.topic.schema';
 import { Result, ResultSchema } from './result.schema';
 import { WalletDocument, walletSchema } from '../wallet/wallet.schema';
 import { UserModule } from '../user/user.module';
+import { NotificationModule } from '../services/notification.module';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { UserModule } from '../user/user.module';
       { name: 'SubTopic', schema: SubTopicSchema },
     ]),
     HelperModule,
-    UserModule
+    UserModule,
+    NotificationModule
   ],
   controllers: [QuizController],
   providers: [QuizService, QuizGateway],

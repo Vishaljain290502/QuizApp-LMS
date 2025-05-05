@@ -72,7 +72,6 @@ export class RazorpayController {
         return res.status(400).json({ success: false, message: 'Transaction not found' });
       }
   
-      // ✅ No need to verify signature here because Razorpay already validated the webhook
       transaction.status = 'completed';
       transaction.razorpay_payment_id = razorpay_payment_id;
       await transaction.save();

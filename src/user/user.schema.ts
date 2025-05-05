@@ -25,6 +25,9 @@ export class UserDocument {
   @Prop()
   mobileNumber: string;
 
+  @Prop({ default: "" })
+  notificationToken: string;
+
   @Prop()
   city: string;
 

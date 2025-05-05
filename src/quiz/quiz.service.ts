@@ -3,9 +3,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Quiz, QuizDocument, QuizStatus } from './quiz.schema';
 import { Result, ResultDocument } from './result.schema';
-import { CreateQuizDto, UpdateQuizDto, SubmitAnswerDto } from './dto/dto';
+import { CreateQuizDto, UpdateQuizDto } from './dto/dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Wallet, WalletDocument } from '../wallet/wallet.schema';
+import { Wallet } from '../wallet/wallet.schema';
 
 @Injectable()
 export class QuizService {
@@ -18,6 +18,7 @@ export class QuizService {
     @InjectModel('Quiz') private quizModel: Model<QuizDocument>,
     @InjectModel(Result.name) private resultModel: Model<ResultDocument>,
     @InjectModel('Wallet') private walletModel: Model<Wallet>,
+    
   ) {}
 
     async createQuiz(createQuizDto: CreateQuizDto): Promise<Quiz> {
@@ -238,7 +239,6 @@ export class QuizService {
       return { message: 'Quiz submitted successfully.' };
     }
   
-  
     async generateResults(quizId: Types.ObjectId): Promise<any[]> {
       const quiz = await this.quizModel.findById(quizId).exec();
       if (!quiz) {
@@ -321,6 +321,30 @@ export class QuizService {
       this.logger.log(`Results and prizes for quiz "${quiz.title}" have been generated.`);
     
       return distributedResults;
+    }
+
+    @Cron(CronExpression.EVERY_MINUTE)
+    async handleQuizResults() {
+      const now = new Date();
+  
+      // Find quizzes that have ended but results not generated yet
+      const endedQuizzes = await this.quizModel.find({
+        endTime: { $lt: now },
+        status: QuizStatus.Published, 
+      });
+  
+      for (const quiz of endedQuizzes) {
+        try {
+          this.logger.log(`⏳ Generating results for quiz: ${quiz.title}`);
+          await this.generateResults(quiz._id as Types.ObjectId);
+
+          quiz.status = QuizStatus.Archived;
+          await quiz.save();
+          this.logger.log(`✅ Results generated for quiz: ${quiz.title}`);
+        } catch (err) {
+          this.logger.error(`❌ Failed to generate results for quiz ${quiz.title}:`, err.message);
+        }
+      }
     }
     
     @Cron(CronExpression.EVERY_MINUTE)
@@ -459,6 +483,8 @@ export class QuizService {
             };
           })
         );
+
+        
     
         return quizzesWithWinners.filter((quiz) => quiz !== null);
       } catch (error) {
@@ -467,5 +493,4 @@ export class QuizService {
       }
     }    
     
-
 }

@@ -32,6 +32,7 @@ import {
   ApiConsumes,
 } from '@nestjs/swagger';
 import { Types } from 'mongoose';
+import { NotificationService } from 'src/services/notification.service';
 
 @ApiTags('quizzes')
 @Controller('quizzes')
@@ -39,6 +40,7 @@ export class QuizController {
   constructor(
     private readonly quizService: QuizService,
     private readonly userService: UserService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   @Post('create')
@@ -153,6 +155,13 @@ export class QuizController {
       answers,
       completionTime,
     );
+    const user = await this.userService.findUserById(new Types.ObjectId(userId));
+    if (!user) throw new NotFoundException('User not found');
+    await this.notificationService.sendPushNotificationToUsers(
+      [user], 
+      'Quiz Sumitted',
+      'You have successfully Submitted the quiz.'
+    );
     return {
       statusCode: 200,
       message: 'Quiz submitted successfully',
@@ -179,20 +188,29 @@ export class QuizController {
   ) {
     const { userId } = body;
     if (!userId) throw new BadRequestException('User ID is required');
-
+  
     const user = await this.userService.findUserById(userId);
     if (!user) throw new NotFoundException('User not found');
-
-    if (user.joinedQuizzes.includes(new Types.ObjectId(quizId))) {
+  
+    const quizObjectId = new Types.ObjectId(quizId);
+  
+    if (user.joinedQuizzes.includes(quizObjectId)) {
       throw new BadRequestException('User has already joined this quiz');
     }
-
-    user.joinedQuizzes.push(new Types.ObjectId(quizId));
+  
+    user.joinedQuizzes.push(quizObjectId);
     await user.save();
-
+  
+    // ✅ Send notification
+    await this.notificationService.sendPushNotificationToUsers(
+      [user], 
+      'Quiz Joined',
+      'You have successfully joined the quiz.'
+    );
+  
     return { statusCode: 200, message: 'Quiz joined successfully', data: user };
   }
-
+  
   @Put('played-by/:quizId')
   @ApiOperation({ summary: 'Add a user to the playedBy array of a quiz' })
   async addPlayedBy(
@@ -251,4 +269,5 @@ export class QuizController {
       data: result,
     };
   }
+
 }

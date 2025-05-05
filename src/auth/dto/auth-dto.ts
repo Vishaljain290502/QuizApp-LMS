@@ -21,6 +21,14 @@ export class LoginUserDto {
     @MaxLength(18)
     @IsNotEmpty()
     password: string;
+
+    @ApiProperty({
+        description:"Nitification Token",
+        required:true,
+      })
+      @IsString()
+      @IsNotEmpty()
+      notificationToken:string;
 }
 
 export class GenerateOtpDto {
