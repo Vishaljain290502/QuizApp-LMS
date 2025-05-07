@@ -45,6 +45,12 @@ export class AuthController {
     const user = await this.userService.findUserByPhoneNumber(
       createUserDto.mobileNumber,
     );
+    const emailUser =  await this.userService.findUserByEmail(createUserDto.email);
+    if(emailUser){
+      throw new BadRequestException(
+        'User with this email already exists',
+      );
+    }
     if (user) {
       throw new BadRequestException(
         'User with this mobile number already exists',
@@ -263,6 +269,7 @@ export class AuthController {
     const { mobileNumber } = body;
 
     const user = await this.userService.findUserByPhoneNumber(mobileNumber);
+    
     if (!user) throw new BadRequestException('User not found');
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();

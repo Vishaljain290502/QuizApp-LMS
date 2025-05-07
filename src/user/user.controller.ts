@@ -89,7 +89,7 @@ export class UserController {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    console.log(user.joinedQuizzes); 
+    console.log(user); 
     return { statusCode: 200, quizzes: user.joinedQuizzes };
   }
   

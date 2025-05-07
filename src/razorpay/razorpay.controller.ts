@@ -84,6 +84,7 @@ export class RazorpayController {
       walletInstance.addDeposit(transaction.amount);
       await this.walletModel.findByIdAndUpdate(walletId, walletInstance);
   
+      console.log("payment verified andupdated succesfully")
       return res.json({ success: true, message: 'Payment verified and wallet updated' });
   
     } catch (error) {

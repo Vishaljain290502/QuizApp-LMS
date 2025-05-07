@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 import { WalletDocument } from '../wallet/wallet.schema';  
 
 @Schema({ timestamps: true })
@@ -49,22 +49,19 @@ export class UserDocument {
   @Prop()
   address: string;
 
-  @Prop({ default: [] })
-  quizzesCompleted: mongoose.Types.ObjectId[]; 
+  @Prop({ type: [Types.ObjectId], default: [] })
+  quizzesCompleted: Types.ObjectId[]; 
 
-  @Prop({ default: [] })
-  coursesEnrolled: mongoose.Types.ObjectId[];
+  @Prop({ type: [Types.ObjectId], default: [] })
+  coursesEnrolled: Types.ObjectId[];
 
-  @Prop({ type: [{ type: mongoose.Types.ObjectId, ref: 'Quizzes' }] })
-  joinedQuizzes: mongoose.Types.ObjectId[];
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Quiz' }] })
+  joinedQuizzes: Types.ObjectId[];
   
+  @Prop({ type: Types.ObjectId, ref: 'Wallet' })
+  wallet: Types.ObjectId;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Wallet' })
-  wallet: mongoose.Types.ObjectId;
-
-  /**d
-   * 🎉 New Payment Details Section
-   */
+  // 🎉 New Payment Details Section
   @Prop()
   bankName: string;
 
@@ -84,7 +81,7 @@ export class UserDocument {
    * Adds a quiz to the user's completed list.
    * @param quizId - The ID of the quiz to add.
    */
-  completeQuiz(quizId: mongoose.Types.ObjectId) {
+  completeQuiz(quizId: Types.ObjectId) {
     if (!this.quizzesCompleted.includes(quizId)) {
       this.quizzesCompleted.push(quizId);
     }
@@ -94,7 +91,7 @@ export class UserDocument {
    * Enrolls the user in a course.
    * @param courseId - The ID of the course to enroll in.
    */
-  enrollCourse(courseId: mongoose.Types.ObjectId) {
+  enrollCourse(courseId: Types.ObjectId) {
     if (!this.coursesEnrolled.includes(courseId)) {
       this.coursesEnrolled.push(courseId);
     }
@@ -104,7 +101,7 @@ export class UserDocument {
    * Joins a quiz (adds it to the user's joined quizzes).
    * @param quizId - The ID of the quiz to join.
    */
-  joinQuiz(quizId: mongoose.Types.ObjectId) {
+  joinQuiz(quizId: Types.ObjectId) {
     if (!this.joinedQuizzes.includes(quizId)) {
       this.joinedQuizzes.push(quizId);
     }

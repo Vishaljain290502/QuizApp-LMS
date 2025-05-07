@@ -2,7 +2,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
 export type CourseDocument = Course & Document;
-
 export type LessonDocument = Lesson & Document;
 
 export enum ContentType {
@@ -53,7 +52,7 @@ export enum CourseStatus {
   Archived = 'archived',
 }
 
-@Schema()
+@Schema({ timestamps: true })
 export class Course {
   @Prop({ required: true })
   title: string;
@@ -64,20 +63,15 @@ export class Course {
   @Prop({ type: [LessonSchema] })
   lessons: Lesson[];
 
-  @Prop({ required: true })
-  instructor: string;
+  // Instructor should ideally be a reference to User
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  instructor: Types.ObjectId;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
   enrolledStudents: Types.ObjectId[];
 
   @Prop({ required: true, enum: CourseStatus, default: CourseStatus.Draft })
   status: CourseStatus;
-
-  @Prop({ default: Date.now })
-  createdAt: Date;
-
-  @Prop()
-  updatedAt?: Date;
 
   @Prop({ default: null })
   publishedAt?: Date;

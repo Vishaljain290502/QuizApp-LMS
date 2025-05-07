@@ -181,7 +181,6 @@ export class QuizController {
   }
 
   @Post('join/:quizId')
-  @ApiOperation({ summary: 'Join a quiz' })
   async joinQuiz(
     @Param('quizId') quizId: string,
     @Body() body: { userId: Types.ObjectId },
@@ -189,19 +188,18 @@ export class QuizController {
     const { userId } = body;
     if (!userId) throw new BadRequestException('User ID is required');
   
-    const user = await this.userService.findUserById(userId);
+    const user = await this.userService.finduserById(userId);
     if (!user) throw new NotFoundException('User not found');
   
     const quizObjectId = new Types.ObjectId(quizId);
   
-    if (user.joinedQuizzes.includes(quizObjectId)) {
+    if (user.joinedQuizzes.some(id => id.toString() === quizObjectId.toString())) {
       throw new BadRequestException('User has already joined this quiz');
     }
   
-    user.joinedQuizzes.push(quizObjectId);
+    user.joinedQuizzes.push(quizObjectId); // ✅ Only push ObjectId here
     await user.save();
   
-    // ✅ Send notification
     await this.notificationService.sendPushNotificationToUsers(
       [user], 
       'Quiz Joined',

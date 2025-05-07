@@ -37,11 +37,18 @@ export class UserService {
   }
   
   async findUserById(userId: Types.ObjectId): Promise<User | null> {
-    return this.userModel.findById(userId).populate({
-      path:"joinedQuizzes",
-      model:"Quiz"
-    }).exec();
-  }  
+    return this.userModel
+      .findById(userId)
+      .populate({ path: 'joinedQuizzes', model: 'Quiz' }) 
+      .exec(); 
+  }
+  
+  
+   
+
+  async finduserById(userId: Types.ObjectId): Promise<User | null> {
+    return this.userModel.findById(userId).exec();
+  }
   
   async findUserByIds(userId: string): Promise<User | null> {
     return this.userModel.findById(userId).populate('joinedQuizzes').exec();
